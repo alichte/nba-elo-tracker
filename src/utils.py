@@ -1,13 +1,8 @@
-from basketball_reference_web_scraper import client as bb_ref_client
-from basketball_reference_web_scraper.data import OutputType
 import pandas as pd
-
-def get_latest_results():
-    return
 
 class Team:
     def __init__(self, name: str, initial_elo=1500):
-        self.name = name,
+        self.name = name
         self.elo_history = [{"date": None, "elo": initial_elo}]
 
     def get_latest_elo(self):
@@ -56,7 +51,7 @@ class EloTracker:
         away_expected = 1 / (1 + 10 ** ((home_elo - away_elo) / 400))
 
         # Update Elo ratings
-        new_home_elo = round(home_elo + self.k_factor * MOV_m * (home_actual - home_expected))
+        new_home_elo = round((home_elo - 100) + self.k_factor * MOV_m * (home_actual - home_expected))
         new_away_elo = round(away_elo + self.k_factor * MOV_m * (away_actual - away_expected))
 
         # Append new Elo ratings
@@ -69,8 +64,9 @@ class EloTracker:
     def get_results_df(self):
         rows = []
         for team_name, team_elo in self.teams.items():
-            for date, elo in team_elo.elo_history:
-                rows.append((team_name, date, elo))
+            for history_entry in team_elo.elo_history:
+                rows.append((team_name, history_entry["date"], history_entry["elo"]))
+
         df = pd.DataFrame(rows, columns = ['team', 'date', 'elo'])
         return df
 
@@ -78,8 +74,9 @@ class EloTracker:
 # Process game results
 def process_game_results(elo_tracker, game_results):
 
+    played_games = [game for game in game_results if game['home_team_score']]
     # Process each game result
-    for game in game_results:
+    for game in played_games:
         elo_tracker.record_game(
             home_team=game['home_team'].value,
             away_team=game['away_team'].value,
